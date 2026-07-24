@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"net/http"
 	"strconv"
 
 	"my-go-project/src/models"
@@ -20,20 +19,20 @@ func CreateComment(c *gin.Context) {
 	postIDStr := c.Param("id")
 	postID, err := strconv.ParseUint(postIDStr, 10, 32)
 	if err != nil {
-		utils.Error(c, http.StatusBadRequest, "invalid post id")
+		utils.RenderError(c, utils.ErrInvalidParam.WithErr(err))
 		return
 	}
 
 	// 检查文章是否存在
 	var post models.Post
 	if err := pkg.DB.First(&post, postID).Error; err != nil {
-		utils.Error(c, http.StatusNotFound, "post not found")
+		utils.RenderError(c, utils.ErrNotFoundPost)
 		return
 	}
 
 	var input CommentInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.Error(c, http.StatusBadRequest, err.Error())
+		utils.RenderError(c, utils.ErrInvalidParam.WithErr(err))
 		return
 	}
 
@@ -44,7 +43,7 @@ func CreateComment(c *gin.Context) {
 	}
 
 	if err := pkg.DB.Create(&comment).Error; err != nil {
-		utils.Error(c, http.StatusInternalServerError, "failed to create comment")
+		utils.RenderError(c, utils.ErrDatabaseError.WithErr(err))
 		return
 	}
 
@@ -56,7 +55,7 @@ func GetCommentsByPost(c *gin.Context) {
 
 	var comments []models.Comment
 	if err := pkg.DB.Preload("User").Where("post_id = ?", postID).Find(&comments).Error; err != nil {
-		utils.Error(c, http.StatusInternalServerError, "failed to fetch comments")
+		utils.RenderError(c, utils.ErrDatabaseError.WithErr(err))
 		return
 	}
 

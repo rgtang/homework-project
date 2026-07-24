@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"net/http"
-
 	"my-go-project/src/models"
 	"my-go-project/src/pkg"
 	"my-go-project/src/utils"
@@ -20,7 +18,7 @@ func CreatePost(c *gin.Context) {
 
 	var input PostInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.Error(c, http.StatusBadRequest, err.Error())
+		utils.RenderError(c, utils.ErrInvalidParam.WithErr(err))
 		return
 	}
 
@@ -31,7 +29,7 @@ func CreatePost(c *gin.Context) {
 	}
 
 	if err := pkg.DB.Create(&post).Error; err != nil {
-		utils.Error(c, http.StatusInternalServerError, "failed to create post")
+		utils.RenderError(c, utils.ErrDatabaseError.WithErr(err))
 		return
 	}
 
@@ -42,7 +40,7 @@ func GetPosts(c *gin.Context) {
 	var posts []models.Post
 	// Preload 加载关联的用户信息（隐藏密码字段）
 	if err := pkg.DB.Preload("User").Find(&posts).Error; err != nil {
-		utils.Error(c, http.StatusInternalServerError, "failed to fetch posts")
+		utils.RenderError(c, utils.ErrDatabaseError.WithErr(err))
 		return
 	}
 
@@ -54,7 +52,7 @@ func GetPost(c *gin.Context) {
 	var post models.Post
 
 	if err := pkg.DB.Preload("User").First(&post, id).Error; err != nil {
-		utils.Error(c, http.StatusNotFound, "post not found")
+		utils.RenderError(c, utils.ErrNotFoundPost)
 		return
 	}
 
@@ -67,19 +65,19 @@ func UpdatePost(c *gin.Context) {
 
 	var post models.Post
 	if err := pkg.DB.First(&post, id).Error; err != nil {
-		utils.Error(c, http.StatusNotFound, "post not found")
+		utils.RenderError(c, utils.ErrNotFoundPost)
 		return
 	}
 
 	// 鉴权：只有作者本人可以修改
 	if post.UserID != userID {
-		utils.Error(c, http.StatusForbidden, "unauthorized to edit this post")
+		utils.RenderError(c, utils.ErrForbidden)
 		return
 	}
 
 	var input PostInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		utils.Error(c, http.StatusBadRequest, err.Error())
+		utils.RenderError(c, utils.ErrInvalidParam.WithErr(err))
 		return
 	}
 
@@ -93,13 +91,13 @@ func DeletePost(c *gin.Context) {
 
 	var post models.Post
 	if err := pkg.DB.First(&post, id).Error; err != nil {
-		utils.Error(c, http.StatusNotFound, "post not found")
+		utils.RenderError(c, utils.ErrNotFoundPost)
 		return
 	}
 
 	// 鉴权：只有作者本人可以删除
 	if post.UserID != userID {
-		utils.Error(c, http.StatusForbidden, "unauthorized to delete this post")
+		utils.RenderError(c, utils.ErrForbidden)
 		return
 	}
 

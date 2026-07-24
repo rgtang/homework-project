@@ -6,12 +6,15 @@ import (
 )
 
 func main() {
-	// 1. 初始化数据库
+	// 1. 初始化日志（必须最先初始化，后续模块依赖它）
+	pkg.InitLogger()
+
+	// 2. 初始化数据库
 	pkg.InitDB()
 
-	// 2. 初始化路由
+	// 3. 初始化路由
 	r := routes.SetupRouter()
 
-	// 3. 启动服务
+	// 4. 启动服务
 	r.Run(":8080")
 }

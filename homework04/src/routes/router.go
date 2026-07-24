@@ -8,9 +8,13 @@ import (
 )
 
 func SetupRouter() *gin.Engine {
-	r := gin.Default()
+	// 使用 gin.New() 而非 gin.Default()，防止重复挂载 Gin 默认的 Logger/Recovery
+	r := gin.New()
 
-	// 开放路由
+	// 挂载我们自定义的 Zap 日志与 Panic 恢复中间件
+	r.Use(middlewares.LoggerMiddleware())
+	r.Use(middlewares.GlobalRecovery())
+
 	api := r.Group("/api")
 	{
 		api.POST("/register", controllers.Register)
@@ -21,7 +25,6 @@ func SetupRouter() *gin.Engine {
 		api.GET("/posts/:id/comments", controllers.GetCommentsByPost)
 	}
 
-	// 需认证路由
 	protected := r.Group("/api")
 	protected.Use(middlewares.JWTAuth())
 	{
